@@ -1,0 +1,148 @@
+using DominoTracker.Application.DTOs;
+using DominoTracker.Application.Interfaces;
+using MatchType = DominoTracker.Domain.Entities.MatchType;
+
+namespace DominoTracker.Application.Services;
+
+public class TeamStatsService : ITeamStatsService
+{
+    private readonly ITeamRepository _teamRepository;
+    private readonly IMatchRepository _matchRepository;
+    private readonly IWarRepository _warRepository;
+
+    public TeamStatsService(
+        ITeamRepository teamRepository,
+        IMatchRepository matchRepository,
+        IWarRepository warRepository)
+    {
+        _teamRepository = teamRepository;
+        _matchRepository = matchRepository;
+        _warRepository = warRepository;
+    }
+
+    public async Task<List<TeamStatsResponse>> GetAllStatsAsync()
+    {
+        var teams = await _teamRepository.GetAllAsync();
+        var matches = await _matchRepository.GetAllWithTeamsAsync();
+        var wars = await _warRepository.GetAllTeamWithMatchesAsync();
+
+        var result = new List<TeamStatsResponse>();
+
+        foreach (var team in teams)
+        {
+            var playedMatches = matches
+                .Where(m =>
+                    m.TeamAId == team.Id ||
+                    m.TeamBId == team.Id)
+                .ToList();
+
+            int wins = 0;
+            int losses = 0;
+
+            int fixedWins = 0;
+            int fixedLosses = 0;
+
+            int warWins = 0;
+            int warLosses = 0;
+
+            int rotatingWins = 0;
+            int rotatingLosses = 0;
+
+            foreach (var match in playedMatches)
+            {
+                bool isWin = match.WinningTeamId == team.Id;
+                bool isLoss = match.WinningTeamId != null && !isWin;
+
+                if (isWin)
+                    wins++;
+
+                if (isLoss)
+                    losses++;
+
+                if (match.Type == MatchType.Fixed)
+                {
+                    if (isWin)
+                        fixedWins++;
+
+                    if (isLoss)
+                        fixedLosses++;
+                }
+                else if (match.Type == MatchType.Rotating)
+                {
+                    if (isWin)
+                        rotatingWins++;
+
+                    if (isLoss)
+                        rotatingLosses++;
+                }
+            }
+
+            var teamWars = wars
+                .Where(w =>
+                    w.WarMatches.Any(wm =>
+                        wm.Match.TeamAId == team.Id ||
+                        wm.Match.TeamBId == team.Id))
+                .ToList();
+
+            foreach (var war in teamWars)
+            {
+                int winsInWar = 0;
+                int lossesInWar = 0;
+
+                foreach (var match in war.WarMatches.Select(wm => wm.Match))
+                {
+                    if (match.WinningTeamId == team.Id)
+                        winsInWar++;
+                    else if (match.WinningTeamId != null)
+                        lossesInWar++;
+                }
+
+                if (winsInWar > lossesInWar)
+                    warWins++;
+                else if (lossesInWar > winsInWar)
+                    warLosses++;
+            }
+
+            result.Add(new TeamStatsResponse
+            {
+                TeamId = team.Id,
+
+                Player1Id = team.Player1Id,
+                Player1Nickname = team.Player1.Nickname,
+
+                Player2Id = team.Player2Id,
+                Player2Nickname = team.Player2.Nickname,
+
+                MatchesPlayed = playedMatches.Count,
+                Wins = wins,
+                Losses = losses,
+                WinRate = playedMatches.Count > 0
+                    ? Math.Round((double)wins / playedMatches.Count, 3)
+                    : 0,
+
+                FixedMatches = playedMatches.Count(m => m.Type == MatchType.Fixed),
+                FixedWins = fixedWins,
+                FixedLosses = fixedLosses,
+                FixedMatchesWinRate = (fixedWins + fixedLosses) > 0
+                    ? Math.Round((double)fixedWins / (fixedWins + fixedLosses), 3)
+                    : 0,
+
+                RotatingMatches = playedMatches.Count(m => m.Type == MatchType.Rotating),
+                RotatingWins = rotatingWins,
+                RotatingLosses = rotatingLosses,
+                RotatingMatchesWinRate = (rotatingWins + rotatingLosses) > 0
+                    ? Math.Round((double)rotatingWins / (rotatingWins + rotatingLosses), 3)
+                    : 0,
+
+                WarsPlayed = teamWars.Count,
+                WarWins = warWins,
+                WarLosses = warLosses,
+                WarWinRate = teamWars.Count > 0
+                    ? Math.Round((double)warWins / teamWars.Count, 3)
+                    : 0,
+            });
+        }
+
+        return result;
+    }
+}

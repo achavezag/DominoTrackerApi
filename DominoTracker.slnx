@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DominoTracker.Application/DominoTracker.Application.csproj" />
+  <Project Path="DominoTracker.Domain/DominoTracker.Domain.csproj" />
+  <Project Path="DominoTracker.Infrastructure/DominoTracker.Infrastructure.csproj" />
+  <Project Path="DominoTracker.WebAPI/DominoTracker.WebAPI.csproj" />
+</Solution>
