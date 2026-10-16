@@ -51,11 +51,12 @@ public class MatchesController : ControllerBase
         [FromQuery] DateTime? toDate,
         [FromQuery] string? type,
         [FromQuery] Guid? teamAId,
-        [FromQuery] Guid? teamBId
+        [FromQuery] Guid? teamBId,
+        [FromQuery] string? seasonIds
     )
     {
         var matches = await _matchService.GetFilteredAsync(
-            fromDate, toDate, type, teamAId, teamBId
+            fromDate, toDate, type, teamAId, teamBId, SeasonQuery.Parse(seasonIds)
         );
 
         return Ok(matches);

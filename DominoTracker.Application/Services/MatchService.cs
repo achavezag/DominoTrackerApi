@@ -8,11 +8,13 @@ public class MatchService
 {
     private readonly IMatchRepository _repository;
     private readonly ITeamRepository _teamRepository;
+    private readonly ISeasonRepository _seasonRepository;
 
-    public MatchService(IMatchRepository repository, ITeamRepository teamRepository)
+    public MatchService(IMatchRepository repository, ITeamRepository teamRepository, ISeasonRepository seasonRepository)
     {
         _repository = repository;
         _teamRepository = teamRepository;
+        _seasonRepository = seasonRepository;
     }
 
     public async Task<MatchDetailResponse?> GetMatchDetailAsync(Guid matchId)
@@ -32,6 +34,7 @@ public class MatchService
 
             WinningTeamId = match.WinningTeamId,
             Status = match.Status.ToString(),
+            SeasonId = match.SeasonId,
 
             TeamA = new TeamDto
             {
@@ -69,55 +72,6 @@ public class MatchService
         };
     }
 
-    /* public async Task<PlayerStatsResponse?> GetPlayerStatsAsync(Guid playerId)
-    {
-        var player = await _playerRepository.GetByIdAsync(playerId);
-
-        if (player == null)
-            return null;
-
-        var matches = await _repository.GetAllWithTeamsAsync();
-
-        var playedMatches = matches
-            .Where(m =>
-                m.TeamA.Player1Id == playerId || m.TeamA.Player2Id == playerId ||
-                m.TeamB.Player1Id == playerId || m.TeamB.Player2Id == playerId)
-            .ToList();
-
-        int wins = 0;
-        int losses = 0;
-        int fixedMatches = 0;
-        int rotatingMatches = 0;
-
-        foreach (var match in playedMatches)
-        {
-            bool isInTeamA =
-                match.TeamA.Player1Id == playerId || match.TeamA.Player2Id == playerId;
-
-            var playerTeamId = isInTeamA ? match.TeamAId : match.TeamBId;
-
-            if (match.WinningTeamId == playerTeamId) wins++;
-            else if (match.WinningTeamId != null) losses++;
-
-            if (match.Type == MatchType.Fixed) fixedMatches++;
-            else if (match.Type == MatchType.Rotating) rotatingMatches++;
-        }
-
-        return new PlayerStatsResponse
-        {
-            PlayerId = player.Id,
-            Name = player.Name,
-            Nickname = player.Nickname,
-
-            MatchesPlayed = playedMatches.Count,
-            Wins = wins,
-            Losses = losses,
-
-            FixedMatches = fixedMatches,
-            RotatingMatches = rotatingMatches
-        };
-    } */
-
     public async Task<MatchDetailResponse> CreateMatchAsync(CreateMatchRequest request)
     {
         // Validar que los equipos sean distintos
@@ -151,6 +105,15 @@ public class MatchService
             ? request.TeamAId
             : request.TeamBId;
 
+        var matchDate = request.Date.Date;
+        var today = DateTime.UtcNow.Date;
+
+        if (matchDate >= today)
+            throw new Exception("La fecha del partido debe ser anterior a la fecha actual");
+
+        var season = await _seasonRepository.GetByDateAsync(matchDate)
+            ?? throw new Exception($"No hay una temporada definida para la fecha {matchDate:yyyy-MM-dd}");
+
         // Crear match
         var match = new Match
         {
@@ -168,8 +131,9 @@ public class MatchService
 
             Status = MatchStatus.Finished,
 
-            CreatedAt = DateTime.UtcNow,
-            FinishedAt = DateTime.UtcNow
+            FinishedAt = matchDate,
+
+            SeasonId = season.Id
         };
 
         await _repository.AddAsync(match);
@@ -192,8 +156,8 @@ public class MatchService
             TeamBScore = m.TeamBScore,
             Status = m.Status.ToString(),
             Type = m.Type.ToString(),
-            CreatedAt = m.CreatedAt,
-            FinishedAt = m.FinishedAt
+            FinishedAt = m.FinishedAt,
+            SeasonId = m.SeasonId
         }).ToList();
     }
 
@@ -202,22 +166,29 @@ public class MatchService
         DateTime? toDate,
         string? type,
         Guid? teamAId,
-        Guid? teamBId
+        Guid? teamBId,
+        List<int>? seasonIds = null
     )
     {
         var matches = await _repository.GetAllWithTeamsAsync();
 
         var query = matches.AsQueryable();
 
+        // Filtro por temporada(s); sin filtro = todas las temporadas combinadas
+        if (seasonIds != null && seasonIds.Count > 0)
+        {
+            query = query.Where(m => seasonIds.Contains(m.SeasonId));
+        }
+
         // Filtro por fechas
         if (fromDate.HasValue)
         {
-            query = query.Where(m => m.CreatedAt >= fromDate.Value);
+            query = query.Where(m => m.FinishedAt >= fromDate.Value);
         }
 
         if (toDate.HasValue)
         {
-            query = query.Where(m => m.CreatedAt <= toDate.Value);
+            query = query.Where(m => m.FinishedAt <= toDate.Value);
         }
 
         // Filtro por tipo
@@ -252,7 +223,7 @@ public class MatchService
 
         // Mapping
         return query
-            .OrderByDescending(m => m.CreatedAt)
+            .OrderByDescending(m => m.FinishedAt)
             .Select(m => new MatchListItemResponse
             {
                 Id = m.Id,
@@ -263,7 +234,8 @@ public class MatchService
                 WinningTeamId = m.WinningTeamId,
                 Status = m.Status.ToString(),
                 Type = m.Type.ToString(),
-                FinishedAt = m.FinishedAt
+                FinishedAt = m.FinishedAt,
+                SeasonId = m.SeasonId
             })
             .DistinctBy(m => m.Id)
             .ToList();

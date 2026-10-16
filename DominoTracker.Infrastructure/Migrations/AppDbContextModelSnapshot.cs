@@ -28,11 +28,11 @@ namespace DominoTracker.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -56,6 +56,8 @@ namespace DominoTracker.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SeasonId");
 
                     b.HasIndex("TeamAId");
 
@@ -81,6 +83,39 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Players");
+                });
+
+            modelBuilder.Entity("DominoTracker.Domain.Entities.Season", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Seasons");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            EndDate = new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2026, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            EndDate = new DateTime(2027, 3, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        });
                 });
 
             modelBuilder.Entity("DominoTracker.Domain.Entities.Team", b =>
@@ -114,6 +149,9 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("TeamAId")
                         .HasColumnType("uniqueidentifier");
 
@@ -124,6 +162,8 @@ namespace DominoTracker.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SeasonId");
 
                     b.HasIndex("TeamAId");
 
@@ -159,6 +199,12 @@ namespace DominoTracker.Infrastructure.Migrations
 
             modelBuilder.Entity("DominoTracker.Domain.Entities.Match", b =>
                 {
+                    b.HasOne("DominoTracker.Domain.Entities.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("DominoTracker.Domain.Entities.Team", "TeamA")
                         .WithMany()
                         .HasForeignKey("TeamAId")
@@ -170,6 +216,8 @@ namespace DominoTracker.Infrastructure.Migrations
                         .HasForeignKey("TeamBId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Season");
 
                     b.Navigation("TeamA");
 
@@ -197,6 +245,12 @@ namespace DominoTracker.Infrastructure.Migrations
 
             modelBuilder.Entity("DominoTracker.Domain.Entities.War", b =>
                 {
+                    b.HasOne("DominoTracker.Domain.Entities.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("DominoTracker.Domain.Entities.Team", "TeamA")
                         .WithMany()
                         .HasForeignKey("TeamAId")
@@ -208,6 +262,8 @@ namespace DominoTracker.Infrastructure.Migrations
                         .HasForeignKey("TeamBId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Season");
 
                     b.Navigation("TeamA");
 

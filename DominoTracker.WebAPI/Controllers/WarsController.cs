@@ -18,9 +18,9 @@ public class WarsController : ControllerBase
 
     // GET: api/wars
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string? seasonIds)
     {
-        var wars = await _warService.GetAllAsync();
+        var wars = await _warService.GetAllAsync(SeasonQuery.Parse(seasonIds));
         return Ok(wars);
     }
 

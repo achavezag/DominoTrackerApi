@@ -17,11 +17,17 @@ public class PlayerService : IPlayerService
         _warRepository = warRepository;
     }
 
-    public async Task<List<PlayerStatsResponse>> GetAllStatsAsync()
+    public async Task<List<PlayerStatsResponse>> GetAllStatsAsync(List<int>? seasonIds = null)
     {
         var players = await _playerRepository.GetAllAsync();
         var matches = await _matchRepository.GetAllWithTeamsAsync();
         var wars = await _warRepository.GetAllWithMatchesAsync();
+
+        if (seasonIds != null && seasonIds.Count > 0)
+        {
+            matches = matches.Where(m => seasonIds.Contains(m.SeasonId)).ToList();
+            wars = wars.Where(w => seasonIds.Contains(w.SeasonId)).ToList();
+        }
 
         var result = new List<PlayerStatsResponse>();
 
@@ -153,7 +159,7 @@ public class PlayerService : IPlayerService
         return result;
     }
 
-    public async Task<HeadToHeadResponse> GetHeadToHeadAsync(Guid player1Id, Guid player2Id)
+    public async Task<HeadToHeadResponse> GetHeadToHeadAsync(Guid player1Id, Guid player2Id, List<int>? seasonIds = null)
     {
         if (player1Id == player2Id)
             throw new Exception("Players must be different");
@@ -161,6 +167,12 @@ public class PlayerService : IPlayerService
         var matches = await _matchRepository.GetAllWithTeamsAsync();
 
         var wars = await _warRepository.GetAllWithMatchesAsync();
+
+        if (seasonIds != null && seasonIds.Count > 0)
+        {
+            matches = matches.Where(m => seasonIds.Contains(m.SeasonId)).ToList();
+            wars = wars.Where(w => seasonIds.Contains(w.SeasonId)).ToList();
+        }
 
         // HEAD TO HEAD MATCHES
         var headToHeadMatches = matches

@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     // public DbSet<Round> Rounds => Set<Round>();
     public DbSet<War> Wars => Set<War>();
     public DbSet<WarMatch> WarMatches => Set<WarMatch>();
+    public DbSet<Season> Seasons => Set<Season>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +53,12 @@ public class AppDbContext : DbContext
             .HasForeignKey(m => m.TeamBId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Match>()
+            .HasOne(m => m.Season)
+            .WithMany()
+            .HasForeignKey(m => m.SeasonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Round relación
         /* modelBuilder.Entity<Round>()
             .HasOne(r => r.Match)
@@ -71,6 +78,12 @@ public class AppDbContext : DbContext
             .HasForeignKey(w => w.TeamBId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<War>()
+            .HasOne(w => w.Season)
+            .WithMany()
+            .HasForeignKey(w => w.SeasonId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // WarMatch relaciones
         modelBuilder.Entity<WarMatch>()
             .HasOne(wm => wm.War)
@@ -87,5 +100,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<WarMatch>()
             .HasIndex(wm => new { wm.WarId, wm.Order })
             .IsUnique();
+
+        // Seasons: calendario fijo de temporadas
+        modelBuilder.Entity<Season>().HasData(
+            new Season { Id = 1, StartDate = new DateTime(2026, 4, 1), EndDate = new DateTime(2026, 10, 2) },
+            new Season { Id = 2, StartDate = new DateTime(2026, 10, 3), EndDate = new DateTime(2027, 3, 31) }
+        );
     }
 }

@@ -20,11 +20,17 @@ public class TeamStatsService : ITeamStatsService
         _warRepository = warRepository;
     }
 
-    public async Task<List<TeamStatsResponse>> GetAllStatsAsync()
+    public async Task<List<TeamStatsResponse>> GetAllStatsAsync(List<int>? seasonIds = null)
     {
         var teams = await _teamRepository.GetAllAsync();
         var matches = await _matchRepository.GetAllWithTeamsAsync();
         var wars = await _warRepository.GetAllTeamWithMatchesAsync();
+
+        if (seasonIds != null && seasonIds.Count > 0)
+        {
+            matches = matches.Where(m => seasonIds.Contains(m.SeasonId)).ToList();
+            wars = wars.Where(w => seasonIds.Contains(w.SeasonId)).ToList();
+        }
 
         var result = new List<TeamStatsResponse>();
 
@@ -114,6 +120,11 @@ public class TeamStatsService : ITeamStatsService
                 Player2Nickname = team.Player2.Nickname,
 
                 MatchesPlayed = playedMatches.Count,
+                SeasonsPlayed = playedMatches
+                    .Select(m => m.SeasonId)
+                    .Distinct()
+                    .OrderBy(s => s)
+                    .ToArray(),
                 Wins = wins,
                 Losses = losses,
                 WinRate = playedMatches.Count > 0

@@ -15,9 +15,14 @@ public class WarService : IWarService
         _repository = repository;
     }
 
-    public async Task<List<WarListItemResponse>> GetAllAsync()
+    public async Task<List<WarListItemResponse>> GetAllAsync(List<int>? seasonIds = null)
     {
         var wars = await _repository.GetAllAsync();
+
+        if (seasonIds != null && seasonIds.Count > 0)
+        {
+            wars = wars.Where(w => seasonIds.Contains(w.SeasonId)).ToList();
+        }
 
         return wars.Select(w => new WarListItemResponse
         {
@@ -58,7 +63,6 @@ public class WarService : IWarService
                     WinningTeamId = wm.Match.WinningTeamId,
                     Status = wm.Match.Status.ToString(),
                     Type = wm.Match.Type.ToString(),
-                    CreatedAt = wm.Match.CreatedAt,
                     FinishedAt = wm.Match.FinishedAt
                 })
                 .ToList()
@@ -108,6 +112,9 @@ public class WarService : IWarService
         var teamAId = first.TeamAId;
         var teamBId = first.TeamBId;
 
+        if (matches.Any(m => m.SeasonId != first.SeasonId))
+            throw new Exception("Todos los partidos deben pertenecer a la misma temporada");
+
         // Validar consistencia de equipos (incluyendo invertidos)
         var invalid = matches.Any(m =>
             !(m.TeamAId == teamAId && m.TeamBId == teamBId) &&
@@ -146,7 +153,8 @@ public class WarService : IWarService
             Date = matches.First().FinishedAt!.Value.Date,
             TeamAId = teamAId,
             TeamBId = teamBId,
-            WinningTeamId = winningTeamId
+            WinningTeamId = winningTeamId,
+            SeasonId = first.SeasonId
         };
 
         await _repository.AddAsync(war);

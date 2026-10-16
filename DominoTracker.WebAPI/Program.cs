@@ -27,6 +27,8 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<TeamStatsService>();
 builder.Services.AddScoped<IWarService, WarService>();
 builder.Services.AddScoped<IWarRepository, WarRepository>();
+builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
+builder.Services.AddScoped<ISeasonService, SeasonService>();
 
 builder.Services.AddCors(options =>
 {

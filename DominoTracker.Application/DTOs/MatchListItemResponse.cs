@@ -14,6 +14,7 @@ public class MatchListItemResponse
     public string Status { get; set; } = null!;
     public string Type { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
+
+    public int SeasonId { get; set; }
 }

@@ -56,18 +56,50 @@ public class TeamsController : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        return Ok(_context.Teams
+        var teams = await _context.Teams
             .Include(t => t.Player1)
             .Include(t => t.Player2)
-            .ToList());
+            .ToListAsync();
+
+        var teamIds = teams.Select(t => t.Id).ToList();
+
+        var matchSeasons = await _context.Matches
+            .Where(m => teamIds.Contains(m.TeamAId) || teamIds.Contains(m.TeamBId))
+            .Select(m => new { m.TeamAId, m.TeamBId, m.SeasonId })
+            .ToListAsync();
+
+        var result = teams.Select(t => new TeamListItemResponse
+        {
+            Id = t.Id,
+            Player1 = new PlayerDto
+            {
+                Id = t.Player1.Id,
+                Name = t.Player1.Name,
+                Nickname = t.Player1.Nickname
+            },
+            Player2 = new PlayerDto
+            {
+                Id = t.Player2.Id,
+                Name = t.Player2.Name,
+                Nickname = t.Player2.Nickname
+            },
+            SeasonsPlayed = matchSeasons
+                .Where(m => m.TeamAId == t.Id || m.TeamBId == t.Id)
+                .Select(m => m.SeasonId)
+                .Distinct()
+                .OrderBy(s => s)
+                .ToArray()
+        });
+
+        return Ok(result);
     }
 
     [HttpGet("stats")]
-    public async Task<ActionResult<List<TeamStatsResponse>>> GetStats()
+    public async Task<ActionResult<List<TeamStatsResponse>>> GetStats([FromQuery] string? seasonIds)
     {
-        var stats = await _teamStatsService.GetAllStatsAsync();
+        var stats = await _teamStatsService.GetAllStatsAsync(SeasonQuery.Parse(seasonIds));
         return Ok(stats);
     }
 }

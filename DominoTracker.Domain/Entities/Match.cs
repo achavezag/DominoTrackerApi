@@ -18,7 +18,8 @@ public class Match
     public MatchType Type { get; set; }
     public MatchStatus Status { get; set; } = MatchStatus.InProgress;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
 
+    public int SeasonId { get; set; }
+    public Season Season { get; set; } = null!;
 }

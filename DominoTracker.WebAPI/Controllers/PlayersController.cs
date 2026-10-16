@@ -42,20 +42,24 @@ public class PlayersController : ControllerBase
     }
 
     [HttpGet("stats")]
-    public async Task<ActionResult<List<PlayerStatsResponse>>> GetAllStats()
+    public async Task<ActionResult<List<PlayerStatsResponse>>> GetAllStats([FromQuery] string? seasonIds)
     {
-        var stats = await _playerService.GetAllStatsAsync();
+        var stats = await _playerService.GetAllStatsAsync(SeasonQuery.Parse(seasonIds));
         return Ok(stats);
     }
 
     [HttpGet("headtohead")]
-    public async Task<ActionResult<HeadToHeadResponse>> GetHeadToHead([FromQuery] Guid player1Id, [FromQuery] Guid player2Id)
+    public async Task<ActionResult<HeadToHeadResponse>> GetHeadToHead(
+        [FromQuery] Guid player1Id,
+        [FromQuery] Guid player2Id,
+        [FromQuery] string? seasonIds)
     {
         try
         {
             var result = await _playerService.GetHeadToHeadAsync(
                 player1Id,
-                player2Id
+                player2Id,
+                SeasonQuery.Parse(seasonIds)
             );
 
             return Ok(result);
