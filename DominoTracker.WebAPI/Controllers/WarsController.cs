@@ -37,9 +37,9 @@ public class WarsController : ControllerBase
     }
 
     [HttpGet("history")]
-    public async Task<IActionResult> GetHistory([FromQuery] Guid teamAId, [FromQuery] Guid teamBId, [FromQuery] MatchType type)
+    public async Task<IActionResult> GetHistory([FromQuery] Guid teamAId, [FromQuery] Guid teamBId, [FromQuery] MatchType type, [FromQuery] DateTime? date)
     {
-        var result = await _warService.GetMatchHistoryAsync(teamAId, teamBId, type);
+        var result = await _warService.GetMatchHistoryAsync(teamAId, teamBId, type, date);
         return Ok(result);
     }
 

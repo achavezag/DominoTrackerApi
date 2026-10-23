@@ -3,6 +3,7 @@ using DominoTracker.Infrastructure.Persistence;
 using DominoTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using DominoTracker.Application.DTOs;
+using DominoTracker.Application.Interfaces;
 using DominoTracker.Application.Services;
 
 namespace DominoTracker.WebAPI.Controllers;
@@ -13,11 +14,13 @@ public class TeamsController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly TeamStatsService _teamStatsService;
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
 
-    public TeamsController(AppDbContext context, TeamStatsService teamStatsService)
+    public TeamsController(AppDbContext context, TeamStatsService teamStatsService, ICurrentSessionAccessor currentSessionAccessor)
     {
         _context = context;
         _teamStatsService = teamStatsService;
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     [HttpPost]
@@ -46,7 +49,8 @@ public class TeamsController : ControllerBase
         {
             Id = Guid.NewGuid(),
             Player1Id = p1,
-            Player2Id = p2
+            Player2Id = p2,
+            SessionId = _currentSessionAccessor.SessionId
         };
 
         _context.Teams.Add(team);
@@ -70,6 +74,10 @@ public class TeamsController : ControllerBase
             .Select(m => new { m.TeamAId, m.TeamBId, m.SeasonId })
             .ToListAsync();
 
+        var seasonById = await _context.Seasons
+            .Select(s => new { s.Id, s.Alias })
+            .ToDictionaryAsync(s => s.Id);
+
         var result = teams.Select(t => new TeamListItemResponse
         {
             Id = t.Id,
@@ -77,19 +85,22 @@ public class TeamsController : ControllerBase
             {
                 Id = t.Player1.Id,
                 Name = t.Player1.Name,
-                Nickname = t.Player1.Nickname
+                Nickname = t.Player1.Nickname,
+                Image = t.Player1.Image
             },
             Player2 = new PlayerDto
             {
                 Id = t.Player2.Id,
                 Name = t.Player2.Name,
-                Nickname = t.Player2.Nickname
+                Nickname = t.Player2.Nickname,
+                Image = t.Player2.Image
             },
             SeasonsPlayed = matchSeasons
                 .Where(m => m.TeamAId == t.Id || m.TeamBId == t.Id)
                 .Select(m => m.SeasonId)
                 .Distinct()
-                .OrderBy(s => s)
+                .OrderBy(id => id)
+                .Select(id => new SeasonPlayedDto { Id = id, Alias = seasonById[id].Alias })
                 .ToArray()
         });
 

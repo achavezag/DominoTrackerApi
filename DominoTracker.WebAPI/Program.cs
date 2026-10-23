@@ -3,6 +3,8 @@ using DominoTracker.Infrastructure.Persistence;
 using DominoTracker.Application.Services;
 using DominoTracker.Application.Interfaces;
 using DominoTracker.Infrastructure.Repositories;
+using DominoTracker.Infrastructure.Services;
+using DominoTracker.WebAPI.Middleware;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,9 @@ builder.Services.AddScoped<IWarService, WarService>();
 builder.Services.AddScoped<IWarRepository, WarRepository>();
 builder.Services.AddScoped<ISeasonRepository, SeasonRepository>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
+builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<ICurrentSessionAccessor, CurrentSessionAccessor>();
 
 builder.Services.AddCors(options =>
 {
@@ -41,6 +46,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 app.UseCors("AllowFrontend");
+
+app.UseMiddleware<SessionMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();
