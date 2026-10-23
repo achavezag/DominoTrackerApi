@@ -10,7 +10,9 @@ public class Team
     public Player Player1 { get; set; } = null!;
     public Player Player2 { get; set; } = null!;
 
-    public static Team Create(Guid player1Id, Guid player2Id)
+    public int SessionId { get; set; }
+
+    public static Team Create(Guid player1Id, Guid player2Id, int sessionId)
     {
         if (player1Id.CompareTo(player2Id) > 0)
         {
@@ -21,7 +23,8 @@ public class Team
         {
             Id = Guid.NewGuid(),
             Player1Id = player1Id,
-            Player2Id = player2Id
+            Player2Id = player2Id,
+            SessionId = sessionId
         };
     }
 }

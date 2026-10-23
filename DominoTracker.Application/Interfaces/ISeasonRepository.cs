@@ -13,5 +13,7 @@ public interface ISeasonRepository
     Task AddAsync(Season season);
     Task RemoveAsync(Season season);
     Task ReseedIdentityAsync();
+    Task<int> GetNextAliasAsync();
+    Task RenumberAliasesAsync();
     Task SaveChangesAsync();
 }

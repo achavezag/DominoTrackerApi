@@ -68,12 +68,38 @@ public class SeasonRepository : ISeasonRepository
 
     public async Task ReseedIdentityAsync()
     {
-        var maxId = await _context.Seasons.AnyAsync()
-            ? await _context.Seasons.MaxAsync(s => s.Id)
+        // Season.Id es una secuencia IDENTITY única y global (compartida entre
+        // todas las sesiones), así que el reseed debe ignorar el filtro global
+        // de sesión y mirar el máximo real de toda la tabla.
+        var allSeasons = _context.Seasons.IgnoreQueryFilters();
+
+        var maxId = await allSeasons.AnyAsync()
+            ? await allSeasons.MaxAsync(s => s.Id)
             : 0;
 
         await _context.Database.ExecuteSqlInterpolatedAsync(
             $"DBCC CHECKIDENT ('Seasons', RESEED, {maxId})");
+    }
+
+    public async Task<int> GetNextAliasAsync()
+    {
+        var maxAlias = await _context.Seasons
+            .Select(s => (int?)s.Alias)
+            .MaxAsync() ?? 0;
+
+        return maxAlias + 1;
+    }
+
+    public async Task RenumberAliasesAsync()
+    {
+        var seasons = await _context.Seasons
+            .OrderBy(s => s.Id)
+            .ToListAsync();
+
+        for (int i = 0; i < seasons.Count; i++)
+        {
+            seasons[i].Alias = i + 1;
+        }
     }
 
     public async Task SaveChangesAsync()

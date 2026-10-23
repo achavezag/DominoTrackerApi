@@ -11,7 +11,7 @@ public class TeamStatsResponse
     public string Player2Nickname { get; set; } = null!;
 
     public int MatchesPlayed { get; set; }
-    public int[] SeasonsPlayed { get; set; } = [];
+    public SeasonPlayedDto[] SeasonsPlayed { get; set; } = [];
     public int Wins { get; set; }
     public int Losses { get; set; }
     public double WinRate { get; set; }

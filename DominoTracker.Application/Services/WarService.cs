@@ -9,10 +9,12 @@ namespace DominoTracker.Application.Services;
 public class WarService : IWarService
 {
     private readonly IWarRepository _repository;
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
 
-    public WarService(IWarRepository repository)
+    public WarService(IWarRepository repository, ICurrentSessionAccessor currentSessionAccessor)
     {
         _repository = repository;
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     public async Task<List<WarListItemResponse>> GetAllAsync(List<int>? seasonIds = null)
@@ -69,11 +71,11 @@ public class WarService : IWarService
         };
     }
 
-    public async Task<List<MatchHistoryItemResponse>> GetMatchHistoryAsync(Guid teamAId, Guid teamBId, MatchType type)
+    public async Task<List<MatchHistoryItemResponse>> GetMatchHistoryAsync(Guid teamAId, Guid teamBId, MatchType type, DateTime? date = null)
     {
-        var today = DateTime.UtcNow.Date;
+        var day = date?.Date ?? DateTime.UtcNow.Date;
 
-        var matches = await _repository.GetMatchHistoryAsync(teamAId, teamBId, type, today);
+        var matches = await _repository.GetMatchHistoryAsync(teamAId, teamBId, type, day);
 
         return matches.Select(m => new MatchHistoryItemResponse
         {
@@ -154,7 +156,8 @@ public class WarService : IWarService
             TeamAId = teamAId,
             TeamBId = teamBId,
             WinningTeamId = winningTeamId,
-            SeasonId = first.SeasonId
+            SeasonId = first.SeasonId,
+            SessionId = _currentSessionAccessor.SessionId
         };
 
         await _repository.AddAsync(war);

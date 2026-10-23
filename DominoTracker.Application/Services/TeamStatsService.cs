@@ -9,15 +9,18 @@ public class TeamStatsService : ITeamStatsService
     private readonly ITeamRepository _teamRepository;
     private readonly IMatchRepository _matchRepository;
     private readonly IWarRepository _warRepository;
+    private readonly ISeasonRepository _seasonRepository;
 
     public TeamStatsService(
         ITeamRepository teamRepository,
         IMatchRepository matchRepository,
-        IWarRepository warRepository)
+        IWarRepository warRepository,
+        ISeasonRepository seasonRepository)
     {
         _teamRepository = teamRepository;
         _matchRepository = matchRepository;
         _warRepository = warRepository;
+        _seasonRepository = seasonRepository;
     }
 
     public async Task<List<TeamStatsResponse>> GetAllStatsAsync(List<int>? seasonIds = null)
@@ -25,6 +28,9 @@ public class TeamStatsService : ITeamStatsService
         var teams = await _teamRepository.GetAllAsync();
         var matches = await _matchRepository.GetAllWithTeamsAsync();
         var wars = await _warRepository.GetAllTeamWithMatchesAsync();
+
+        var seasons = await _seasonRepository.GetAllAsync();
+        var seasonById = seasons.ToDictionary(s => s.Id);
 
         if (seasonIds != null && seasonIds.Count > 0)
         {
@@ -123,7 +129,8 @@ public class TeamStatsService : ITeamStatsService
                 SeasonsPlayed = playedMatches
                     .Select(m => m.SeasonId)
                     .Distinct()
-                    .OrderBy(s => s)
+                    .OrderBy(id => id)
+                    .Select(id => new SeasonPlayedDto { Id = id, Alias = seasonById[id].Alias })
                     .ToArray(),
                 Wins = wins,
                 Losses = losses,

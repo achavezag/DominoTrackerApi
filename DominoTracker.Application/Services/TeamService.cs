@@ -6,10 +6,12 @@ namespace DominoTracker.Application.Services;
 public class TeamService
 {
     private readonly ITeamRepository _teamRepository;
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
 
-    public TeamService(ITeamRepository teamRepository)
+    public TeamService(ITeamRepository teamRepository, ICurrentSessionAccessor currentSessionAccessor)
     {
         _teamRepository = teamRepository;
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     private (Guid, Guid) NormalizePlayers(Guid player1Id, Guid player2Id)
@@ -35,7 +37,8 @@ public class TeamService
         {
             Id = Guid.NewGuid(),
             Player1Id = p1,
-            Player2Id = p2
+            Player2Id = p2,
+            SessionId = _currentSessionAccessor.SessionId
         };
 
         await _teamRepository.AddAsync(team);

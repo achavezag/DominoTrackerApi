@@ -1,13 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using DominoTracker.Domain.Entities;
+using DominoTracker.Application.Interfaces;
 
 namespace DominoTracker.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options)
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentSessionAccessor currentSessionAccessor)
         : base(options)
     {
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     public DbSet<Player> Players => Set<Player>();
@@ -17,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<War> Wars => Set<War>();
     public DbSet<WarMatch> WarMatches => Set<WarMatch>();
     public DbSet<Season> Seasons => Set<Season>();
+    public DbSet<Session> Sessions => Set<Session>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,7 +29,7 @@ public class AppDbContext : DbContext
 
         // Team config (evitar duplicados)
         modelBuilder.Entity<Team>()
-            .HasIndex(t => new { t.Player1Id, t.Player2Id })
+            .HasIndex(t => new { t.SessionId, t.Player1Id, t.Player2Id })
             .IsUnique();
 
         // Relaciones Team -> Player
@@ -101,10 +106,57 @@ public class AppDbContext : DbContext
             .HasIndex(wm => new { wm.WarId, wm.Order })
             .IsUnique();
 
-        // Seasons: calendario fijo de temporadas
+        // Relaciones *.SessionId -> Session (sin navegación inversa)
+        modelBuilder.Entity<Player>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(p => p.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Team>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(t => t.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Match>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(m => m.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<War>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(w => w.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Season>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(s => s.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Season>()
+            .HasIndex(s => new { s.SessionId, s.Alias })
+            .IsUnique();
+
+        // Filtros globales: cada sesión solo ve su propia data
+        modelBuilder.Entity<Player>().HasQueryFilter(p => p.SessionId == _currentSessionAccessor.SessionId);
+        modelBuilder.Entity<Team>().HasQueryFilter(t => t.SessionId == _currentSessionAccessor.SessionId);
+        modelBuilder.Entity<Match>().HasQueryFilter(m => m.SessionId == _currentSessionAccessor.SessionId);
+        modelBuilder.Entity<War>().HasQueryFilter(w => w.SessionId == _currentSessionAccessor.SessionId);
+        modelBuilder.Entity<Season>().HasQueryFilter(s => s.SessionId == _currentSessionAccessor.SessionId);
+
+        // Sesión sembrada: contiene toda la data existente antes de este feature
+        modelBuilder.Entity<Session>().HasData(
+            new Session { Id = 1, Name = "Sesión principal", CreatedAt = new DateTime(2026, 4, 1) }
+        );
+
+        // Seasons: calendario fijo de temporadas (sesión 1)
         modelBuilder.Entity<Season>().HasData(
-            new Season { Id = 1, StartDate = new DateTime(2026, 4, 1), EndDate = new DateTime(2026, 10, 2) },
-            new Season { Id = 2, StartDate = new DateTime(2026, 10, 3), EndDate = new DateTime(2027, 3, 31) }
+            new Season { Id = 1, StartDate = new DateTime(2026, 4, 1), EndDate = new DateTime(2026, 10, 2), SessionId = 1, Alias = 1 },
+            new Season { Id = 2, StartDate = new DateTime(2026, 10, 3), EndDate = new DateTime(2027, 3, 31), SessionId = 1, Alias = 2 }
         );
     }
 }

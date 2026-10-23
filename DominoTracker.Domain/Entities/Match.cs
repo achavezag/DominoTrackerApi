@@ -22,4 +22,6 @@ public class Match
 
     public int SeasonId { get; set; }
     public Season Season { get; set; } = null!;
+
+    public int SessionId { get; set; }
 }

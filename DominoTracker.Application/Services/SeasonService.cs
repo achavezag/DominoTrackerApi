@@ -8,10 +8,12 @@ namespace DominoTracker.Application.Services;
 public class SeasonService : ISeasonService
 {
     private readonly ISeasonRepository _repository;
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
 
-    public SeasonService(ISeasonRepository repository)
+    public SeasonService(ISeasonRepository repository, ICurrentSessionAccessor currentSessionAccessor)
     {
         _repository = repository;
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     public async Task<List<SeasonDto>> GetAllAsync()
@@ -51,10 +53,14 @@ public class SeasonService : ISeasonService
         if (overlaps)
             throw new Exception("El rango de fechas se superpone con una temporada existente");
 
+        var alias = await _repository.GetNextAliasAsync();
+
         var season = new Season
         {
             StartDate = request.StartDate.Date,
-            EndDate = request.EndDate.Date
+            EndDate = request.EndDate.Date,
+            SessionId = _currentSessionAccessor.SessionId,
+            Alias = alias
         };
 
         await _repository.AddAsync(season);
@@ -107,12 +113,16 @@ public class SeasonService : ISeasonService
         await _repository.RemoveAsync(season);
         await _repository.SaveChangesAsync();
         await _repository.ReseedIdentityAsync();
+
+        await _repository.RenumberAliasesAsync();
+        await _repository.SaveChangesAsync();
     }
 
     private static SeasonDto ToDto(Season season) => new()
     {
         Id = season.Id,
         StartDate = season.StartDate,
-        EndDate = season.EndDate
+        EndDate = season.EndDate,
+        Alias = season.Alias
     };
 }

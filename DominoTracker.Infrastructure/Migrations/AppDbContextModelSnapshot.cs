@@ -34,6 +34,9 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
 
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -59,6 +62,8 @@ namespace DominoTracker.Infrastructure.Migrations
 
                     b.HasIndex("SeasonId");
 
+                    b.HasIndex("SessionId");
+
                     b.HasIndex("TeamAId");
 
                     b.HasIndex("TeamBId");
@@ -72,6 +77,9 @@ namespace DominoTracker.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -80,7 +88,12 @@ namespace DominoTracker.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
 
                     b.ToTable("Players");
                 });
@@ -93,13 +106,22 @@ namespace DominoTracker.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Alias")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SessionId", "Alias")
+                        .IsUnique();
 
                     b.ToTable("Seasons");
 
@@ -107,14 +129,46 @@ namespace DominoTracker.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
+                            Alias = 1,
                             EndDate = new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SessionId = 1,
                             StartDate = new DateTime(2026, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             Id = 2,
+                            Alias = 2,
                             EndDate = new DateTime(2027, 3, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SessionId = 1,
                             StartDate = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        });
+                });
+
+            modelBuilder.Entity("DominoTracker.Domain.Entities.Session", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sessions");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Name = "Sesión principal"
                         });
                 });
 
@@ -130,11 +184,16 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Property<Guid>("Player2Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Player1Id");
 
                     b.HasIndex("Player2Id");
 
-                    b.HasIndex("Player1Id", "Player2Id")
+                    b.HasIndex("SessionId", "Player1Id", "Player2Id")
                         .IsUnique();
 
                     b.ToTable("Teams");
@@ -152,6 +211,9 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Property<int>("SeasonId")
                         .HasColumnType("int");
 
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("TeamAId")
                         .HasColumnType("uniqueidentifier");
 
@@ -164,6 +226,8 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SeasonId");
+
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("TeamAId");
 
@@ -205,6 +269,12 @@ namespace DominoTracker.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("DominoTracker.Domain.Entities.Team", "TeamA")
                         .WithMany()
                         .HasForeignKey("TeamAId")
@@ -224,6 +294,24 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Navigation("TeamB");
                 });
 
+            modelBuilder.Entity("DominoTracker.Domain.Entities.Player", b =>
+                {
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DominoTracker.Domain.Entities.Season", b =>
+                {
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DominoTracker.Domain.Entities.Team", b =>
                 {
                     b.HasOne("DominoTracker.Domain.Entities.Player", "Player1")
@@ -238,6 +326,12 @@ namespace DominoTracker.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Player1");
 
                     b.Navigation("Player2");
@@ -248,6 +342,12 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.HasOne("DominoTracker.Domain.Entities.Season", "Season")
                         .WithMany()
                         .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

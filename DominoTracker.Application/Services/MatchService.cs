@@ -9,12 +9,18 @@ public class MatchService
     private readonly IMatchRepository _repository;
     private readonly ITeamRepository _teamRepository;
     private readonly ISeasonRepository _seasonRepository;
+    private readonly ICurrentSessionAccessor _currentSessionAccessor;
 
-    public MatchService(IMatchRepository repository, ITeamRepository teamRepository, ISeasonRepository seasonRepository)
+    public MatchService(
+        IMatchRepository repository,
+        ITeamRepository teamRepository,
+        ISeasonRepository seasonRepository,
+        ICurrentSessionAccessor currentSessionAccessor)
     {
         _repository = repository;
         _teamRepository = teamRepository;
         _seasonRepository = seasonRepository;
+        _currentSessionAccessor = currentSessionAccessor;
     }
 
     public async Task<MatchDetailResponse?> GetMatchDetailAsync(Guid matchId)
@@ -43,13 +49,15 @@ public class MatchService
                 {
                     Id = match.TeamA.Player1.Id,
                     Name = match.TeamA.Player1.Name,
-                    Nickname = match.TeamA.Player1.Nickname
+                    Nickname = match.TeamA.Player1.Nickname,
+                    Image = match.TeamA.Player1.Image
                 },
                 Player2 = new PlayerDto
                 {
                     Id = match.TeamA.Player2.Id,
                     Name = match.TeamA.Player2.Name,
-                    Nickname = match.TeamA.Player2.Nickname
+                    Nickname = match.TeamA.Player2.Nickname,
+                    Image = match.TeamA.Player2.Image
                 }
             },
 
@@ -60,13 +68,15 @@ public class MatchService
                 {
                     Id = match.TeamB.Player1.Id,
                     Name = match.TeamB.Player1.Name,
-                    Nickname = match.TeamB.Player1.Nickname
+                    Nickname = match.TeamB.Player1.Nickname,
+                    Image = match.TeamB.Player1.Image
                 },
                 Player2 = new PlayerDto
                 {
                     Id = match.TeamB.Player2.Id,
                     Name = match.TeamB.Player2.Name,
-                    Nickname = match.TeamB.Player2.Nickname
+                    Nickname = match.TeamB.Player2.Nickname,
+                    Image = match.TeamB.Player2.Image
                 }
             },
         };
@@ -131,9 +141,13 @@ public class MatchService
 
             Status = MatchStatus.Finished,
 
-            FinishedAt = matchDate,
+            // Se conserva el día/mes/año elegido por el usuario, pero se le agrega
+            // la hora exacta de guardado para preservar el orden de inserción entre
+            // partidos de un mismo día (el historial del día se ordena por FinishedAt).
+            FinishedAt = matchDate + DateTime.UtcNow.TimeOfDay,
 
-            SeasonId = season.Id
+            SeasonId = season.Id,
+            SessionId = _currentSessionAccessor.SessionId
         };
 
         await _repository.AddAsync(match);
@@ -180,15 +194,15 @@ public class MatchService
             query = query.Where(m => seasonIds.Contains(m.SeasonId));
         }
 
-        // Filtro por fechas
+        // Filtro por fechas (por día, sin importar la hora de guardado)
         if (fromDate.HasValue)
         {
-            query = query.Where(m => m.FinishedAt >= fromDate.Value);
+            query = query.Where(m => m.FinishedAt!.Value.Date >= fromDate.Value.Date);
         }
 
         if (toDate.HasValue)
         {
-            query = query.Where(m => m.FinishedAt <= toDate.Value);
+            query = query.Where(m => m.FinishedAt!.Value.Date <= toDate.Value.Date);
         }
 
         // Filtro por tipo

@@ -15,5 +15,7 @@ public class War
     public int SeasonId { get; set; }
     public Season Season { get; set; } = null!;
 
+    public int SessionId { get; set; }
+
     public List<WarMatch> WarMatches { get; set; } = new();
 }
