@@ -118,8 +118,8 @@ public class MatchService
         var matchDate = request.Date.Date;
         var today = DateTime.UtcNow.Date;
 
-        if (matchDate >= today)
-            throw new Exception("La fecha del partido debe ser anterior a la fecha actual");
+        if (matchDate > today)
+            throw new Exception("La fecha del partido no puede ser posterior a la fecha actual");
 
         var season = await _seasonRepository.GetByDateAsync(matchDate)
             ?? throw new Exception($"No hay una temporada definida para la fecha {matchDate:yyyy-MM-dd}");

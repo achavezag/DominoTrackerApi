@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DominoTracker.Application.Constants;
 using DominoTracker.Application.DTOs;
 using DominoTracker.Application.Interfaces;
 
@@ -6,6 +8,7 @@ namespace DominoTracker.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = RoleNames.SuperAdmin)]
 public class SessionsController : ControllerBase
 {
     private readonly ISessionService _sessionService;

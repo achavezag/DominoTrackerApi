@@ -98,6 +98,40 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.ToTable("Players");
                 });
 
+            modelBuilder.Entity("DominoTracker.Domain.Entities.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "super_admin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "session_admin"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "user"
+                        });
+                });
+
             modelBuilder.Entity("DominoTracker.Domain.Entities.Season", b =>
                 {
                     b.Property<int>("Id")
@@ -197,6 +231,47 @@ namespace DominoTracker.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("DominoTracker.Domain.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("8f3b1a2c-6b7e-4e5f-9a2d-1c4f6e7a8b9c"),
+                            PasswordHash = "/Jx5Yu58AibaTyi8XdLUGBINFcHigxQUmZJuIuWbP4/sbf78aNixNoAzchndAo0P",
+                            RoleId = 1,
+                            Username = "Domino_SupAd"
+                        });
                 });
 
             modelBuilder.Entity("DominoTracker.Domain.Entities.War", b =>
@@ -335,6 +410,20 @@ namespace DominoTracker.Infrastructure.Migrations
                     b.Navigation("Player1");
 
                     b.Navigation("Player2");
+                });
+
+            modelBuilder.Entity("DominoTracker.Domain.Entities.User", b =>
+                {
+                    b.HasOne("DominoTracker.Domain.Entities.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DominoTracker.Domain.Entities.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("DominoTracker.Domain.Entities.War", b =>

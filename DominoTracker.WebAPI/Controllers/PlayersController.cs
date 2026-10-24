@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DominoTracker.Application.Constants;
 using DominoTracker.Infrastructure.Persistence;
 using DominoTracker.Domain.Entities;
 using DominoTracker.Application.DTOs;
@@ -23,6 +25,7 @@ public class PlayersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Create(CreatePlayerRequest request)
     {
         var player = new Player
@@ -47,6 +50,7 @@ public class PlayersController : ControllerBase
     }
 
     [HttpPut("{id:guid}/image")]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> UpdateImage(Guid id, UpdatePlayerImageRequest request)
     {
         var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == id);

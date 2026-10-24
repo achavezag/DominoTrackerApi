@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DominoTracker.Application.Constants;
 using DominoTracker.Infrastructure.Persistence;
 using DominoTracker.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,7 @@ public class TeamsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Create(CreateTeamRequest request)
     {
         if (request.Player1Id == request.Player2Id)

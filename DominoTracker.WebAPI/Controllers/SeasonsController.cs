@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DominoTracker.Application.Constants;
 using DominoTracker.Application.DTOs;
 using DominoTracker.Application.Exceptions;
 using DominoTracker.Application.Interfaces;
@@ -54,6 +56,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Create(CreateSeasonRequest request)
     {
         try
@@ -68,6 +71,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Update(int id, UpdateSeasonRequest request)
     {
         try
@@ -86,6 +90,7 @@ public class SeasonsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Delete(int id)
     {
         try

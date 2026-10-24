@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DominoTracker.Application.Constants;
 using DominoTracker.Application.Exceptions;
 using DominoTracker.Application.DTOs;
 using MatchType = DominoTracker.Domain.Entities.MatchType;
@@ -44,6 +46,7 @@ public class WarsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> Create([FromBody] CreateWarRequest request)
     {
         try

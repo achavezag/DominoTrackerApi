@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using DominoTracker.Application.Constants;
 using DominoTracker.Application.Interfaces;
 using DominoTracker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,27 @@ public class SessionMiddleware
 
     public async Task InvokeAsync(HttpContext context, ICurrentSessionAccessor currentSessionAccessor, AppDbContext dbContext)
     {
+        var role = context.User.FindFirstValue(ClaimTypes.Role);
+
+        // Usuarios autenticados que no son super_admin: la sesión activa es
+        // siempre la que viene fija en el JWT (claim "sessionId"); se ignora
+        // cualquier X-Session-Id que mande el cliente, para que no pueda
+        // "entrar" a una sesión distinta a la suya.
+        if (context.User.Identity?.IsAuthenticated == true && role != RoleNames.SuperAdmin)
+        {
+            var sessionIdClaim = context.User.FindFirstValue("sessionId");
+
+            if (int.TryParse(sessionIdClaim, out var claimSessionId))
+            {
+                currentSessionAccessor.SessionId = claimSessionId;
+            }
+
+            await _next(context);
+            return;
+        }
+
+        // super_admin (o requests sin autenticar, p.ej. /api/auth/login):
+        // comportamiento original basado en header, default sesión 1.
         if (!context.Request.Headers.TryGetValue(HeaderName, out var headerValue))
         {
             currentSessionAccessor.SessionId = 1;

@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using DominoTracker.Application.Constants;
 using DominoTracker.Application.Services;
 using DominoTracker.Infrastructure.Persistence;
-using DominoTracker.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using DominoTracker.Application.DTOs;
 
 namespace DominoTracker.WebAPI.Controllers;
@@ -21,6 +21,7 @@ public class MatchesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.AdminRoles)]
     public async Task<IActionResult> CreateMatch(CreateMatchRequest request)
     {
         try

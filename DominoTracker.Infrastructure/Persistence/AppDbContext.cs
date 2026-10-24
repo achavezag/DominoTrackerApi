@@ -17,11 +17,12 @@ public class AppDbContext : DbContext
     public DbSet<Player> Players => Set<Player>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<Match> Matches => Set<Match>();
-    // public DbSet<Round> Rounds => Set<Round>();
     public DbSet<War> Wars => Set<War>();
     public DbSet<WarMatch> WarMatches => Set<WarMatch>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,12 +64,6 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(m => m.SeasonId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        // Round relación
-        /* modelBuilder.Entity<Round>()
-            .HasOne(r => r.Match)
-            .WithMany(m => m.Rounds)
-            .HasForeignKey(r => r.MatchId); */
 
         // War relaciones
         modelBuilder.Entity<War>()
@@ -141,6 +136,23 @@ public class AppDbContext : DbContext
             .HasIndex(s => new { s.SessionId, s.Alias })
             .IsUnique();
 
+        // User/Role: sin filtro global (super_admin gestiona usuarios de cualquier sesión)
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasOne<Role>()
+            .WithMany()
+            .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<User>()
+            .HasOne<Session>()
+            .WithMany()
+            .HasForeignKey(u => u.SessionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Filtros globales: cada sesión solo ve su propia data
         modelBuilder.Entity<Player>().HasQueryFilter(p => p.SessionId == _currentSessionAccessor.SessionId);
         modelBuilder.Entity<Team>().HasQueryFilter(t => t.SessionId == _currentSessionAccessor.SessionId);
@@ -157,6 +169,25 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Season>().HasData(
             new Season { Id = 1, StartDate = new DateTime(2026, 4, 1), EndDate = new DateTime(2026, 10, 2), SessionId = 1, Alias = 1 },
             new Season { Id = 2, StartDate = new DateTime(2026, 10, 3), EndDate = new DateTime(2027, 3, 31), SessionId = 1, Alias = 2 }
+        );
+
+        // Roles fijos
+        modelBuilder.Entity<Role>().HasData(
+            new Role { Id = 1, Name = "super_admin" },
+            new Role { Id = 2, Name = "session_admin" },
+            new Role { Id = 3, Name = "user" }
+        );
+
+        // Usuario semilla: super_admin (password: Dom_SA_AChA, hash precalculado con PasswordHasher)
+        modelBuilder.Entity<User>().HasData(
+            new User
+            {
+                Id = Guid.Parse("8f3b1a2c-6b7e-4e5f-9a2d-1c4f6e7a8b9c"),
+                Username = "Domino_SupAd",
+                PasswordHash = "/Jx5Yu58AibaTyi8XdLUGBINFcHigxQUmZJuIuWbP4/sbf78aNixNoAzchndAo0P",
+                RoleId = 1,
+                SessionId = null
+            }
         );
     }
 }
