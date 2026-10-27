@@ -68,11 +68,14 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:3000" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy => policy
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -81,13 +84,14 @@ var app = builder.Build();
 
 app.UseRouting();
 app.UseCors("AllowFrontend");
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<SessionMiddleware>();
-
-app.UseSwagger();
-app.UseSwaggerUI();
 
 app.MapControllers();
 
